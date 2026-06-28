@@ -1,0 +1,41 @@
+{
+  "name": "ctx-keeper",
+  "version": "0.1.0",
+  "description": "CLI that keeps your project context fresh — scan structure, trace deps, log decisions, generate .context.md",
+  "type": "module",
+  "bin": {
+    "ctx": "./bin/ctx.js"
+  },
+  "files": [
+    "bin/",
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/cli.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "cli",
+    "context",
+    "project-context",
+    "ai-agent",
+    "codebase-context",
+    "maintenance"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jamesoldman/ctx-keeper.git"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
