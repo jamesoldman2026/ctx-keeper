@@ -27,7 +27,7 @@ function help(): string {
   ].join('\n');
 }
 
-function parseArgs(argv: string[]): { cmd: string; args: string[]; dir: string } {
+export function parseArgs(argv: string[]): { cmd: string; args: string[]; dir: string } {
   const dirIdx = argv.indexOf('--dir');
   let dir = process.cwd();
   const filtered: string[] = [];
@@ -88,7 +88,9 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch(err => {
-  console.error('Error:', err instanceof Error ? err.stack || err.message : String(err));
-  process.exit(1);
-});
+if (process.argv[1]?.endsWith('cli.js') || process.argv[1]?.endsWith('ctx.js')) {
+  main().catch(err => {
+    console.error('Error:', err instanceof Error ? err.stack || err.message : String(err));
+    process.exit(1);
+  });
+}
