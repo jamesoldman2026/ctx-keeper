@@ -29,6 +29,13 @@ npx ctx-keeper init
 | `sync` | **Inject context into `AGENTS.md`** between `<!-- ctx -->` markers |
 | `--dir <path>` | Target a different directory |
 
+## Development
+
+```sh
+npm test          # run 141 tests
+npm run validate  # test → build → dogfood scan → 3 external projects
+```
+
 ## Workflow
 
 ```sh
