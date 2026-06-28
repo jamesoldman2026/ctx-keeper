@@ -48,7 +48,11 @@ export function scanTree(root: string, ignore?: string[]): FileEntry[] {
     let children: fs.Dirent[];
     try {
       children = fs.readdirSync(abs, { withFileTypes: true });
-    } catch {
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.includes('permission') || msg.includes('EACCES') || msg.includes('EPERM')) {
+        console.error(`warning: permission denied — ${abs}`);
+      }
       continue;
     }
 
@@ -59,7 +63,7 @@ export function scanTree(root: string, ignore?: string[]): FileEntry[] {
       const absChild = abs + '/' + child.name;
       let isDir = child.isDirectory();
       if (!isDir && child.isSymbolicLink()) {
-        try { isDir = fs.statSync(absChild).isDirectory(); } catch { /* ignore */ }
+        try { isDir = fs.statSync(absChild).isDirectory(); } catch { /* broken symlink, skip */ }
       }
       if (isDir) {
         queue.push(childRel);
@@ -90,13 +94,14 @@ const TS_IMPORT_RE: RegExp[] = [
 const PY_IMPORT_RE: RegExp[] = [
   /^\s*import\s+(\w[\w.]*)/gm,
   /^\s*from\s+(\w[\w.]*)\s+import/gm,
+  /^\s*from\s+(\.[\w.]*)\s+import/gm,
 ];
 
 const C_IMPORT_RE: RegExp[] = [
   /#include\s+["<]([^">]+)[">]/g,
 ];
 
-function scanImports(content: string, file: string): DepEdge[] {
+export function scanImports(content: string, file: string): DepEdge[] {
   const edges: DepEdge[] = [];
   const ext = file.split('.').pop()?.toLowerCase() || '';
   const isC = /^(c|cpp|cc|cxx|h|hpp|hh)$/.test(ext);
@@ -116,12 +121,12 @@ function scanImports(content: string, file: string): DepEdge[] {
   return edges;
 }
 
-function resolveImport(fromFile: string, target: string, root: string): string | null {
+export function resolveImport(fromFile: string, target: string, root: string): string | null {
+  root = path.resolve(root);
   if (target.startsWith('.')) {
     const base = path.dirname(fromFile);
     const resolved = path.resolve(root, base, target);
     const candidates = [
-      resolved,
       resolved + '.ts',
       resolved + '.tsx',
       resolved + '.js',
@@ -131,6 +136,7 @@ function resolveImport(fromFile: string, target: string, root: string): string |
       resolved + '/index.tsx',
       resolved + '.py',
       resolved + '/__init__.py',
+      resolved,
     ];
     if (resolved.endsWith('.js')) {
       const stem = resolved.slice(0, -3);
@@ -151,11 +157,28 @@ function resolveImport(fromFile: string, target: string, root: string): string |
 
   {
     const c = path.resolve(root, fromDir, target);
-    if (fs.existsSync(c)) return path.relative(root, c);
+    if (fs.existsSync(c)) {
+      // If it's a directory, prefer __init__.py / index.ts / index.js
+      if (fs.statSync(c).isDirectory()) {
+        for (const idx of ['/__init__.py', '/index.ts', '/index.js']) {
+          const ci = c + idx;
+          if (fs.existsSync(ci)) return path.relative(root, ci);
+        }
+      }
+      return path.relative(root, c);
+    }
   }
   {
     const c = path.resolve(root, target);
-    if (fs.existsSync(c)) return target;
+    if (fs.existsSync(c)) {
+      if (fs.statSync(c).isDirectory()) {
+        for (const idx of ['/__init__.py', '/index.ts', '/index.js']) {
+          const ci = c + idx;
+          if (fs.existsSync(ci)) return target + idx;
+        }
+      }
+      return target;
+    }
   }
 
   if (target.includes('.') && !target.startsWith('.')) {

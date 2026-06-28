@@ -1,3 +1,5 @@
+import path from 'node:path';
+import fs from 'node:fs';
 import { init } from './commands/init.js';
 import { doScan } from './commands/scan.js';
 import { doLog } from './commands/log.js';
@@ -30,7 +32,7 @@ function parseArgs(argv: string[]): { cmd: string; args: string[]; dir: string }
   let dir = process.cwd();
   const filtered: string[] = [];
   if (dirIdx !== -1 && dirIdx + 1 < argv.length) {
-    dir = argv[dirIdx + 1];
+    dir = path.resolve(argv[dirIdx + 1]);
   }
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--dir') { i++; continue; }
@@ -41,6 +43,15 @@ function parseArgs(argv: string[]): { cmd: string; args: string[]; dir: string }
 
 async function main(): Promise<void> {
   const { cmd, args, dir } = parseArgs(process.argv.slice(2));
+
+  if (cmd !== 'help' && !fs.existsSync(dir)) {
+    console.error(`error: directory not found — ${dir}`);
+    process.exit(1);
+  }
+  if (cmd !== 'help' && !fs.statSync(dir).isDirectory()) {
+    console.error(`error: not a directory — ${dir}`);
+    process.exit(1);
+  }
 
   switch (cmd) {
     case 'init': {
@@ -78,6 +89,6 @@ async function main(): Promise<void> {
 }
 
 main().catch(err => {
-  console.error('Error:', err.message);
+  console.error('Error:', err instanceof Error ? err.stack || err.message : String(err));
   process.exit(1);
 });

@@ -13,7 +13,8 @@ export function loadConfig(root: string): CtxConfig | null {
   if (!raw) return null;
   try {
     return JSON.parse(raw) as CtxConfig;
-  } catch {
+  } catch (e) {
+    console.error(`warning: corrupt config at ${configPath(root)} — ${(e as Error).message}`);
     return null;
   }
 }
@@ -61,7 +62,8 @@ export function loadSnapshot(root: string): Snapshot | null {
   if (!raw) return null;
   try {
     return JSON.parse(raw) as Snapshot;
-  } catch {
+  } catch (e) {
+    console.error(`warning: corrupt snapshot at ${snapshotPath(root)} — ${(e as Error).message}`);
     return null;
   }
 }
