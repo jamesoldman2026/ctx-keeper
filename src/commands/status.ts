@@ -17,14 +17,18 @@ export async function showStatus(root: string): Promise<string> {
     uncommitted = out.toString().split('\n').filter(Boolean).length;
   } catch {}
 
+  const snapFiles = snap ? snap.tree.filter(e => e.type === 'file').length : 0;
+  const snapDirs = snap ? snap.tree.filter(e => e.type === 'dir').length : 0;
+  const fw = cfg?.framework || snap?.patterns.framework;
   return [
     `Project: ${cfg?.projectName || '?'}`,
     `Branch : ${branch}`,
     `Type   : ${cfg?.projectType || '?'}`,
-    `Framework: ${cfg?.framework || snap?.patterns.framework || '?'}`,
+    `Framework: ${fw || 'unknown'}`,
     ``,
     `Last scan : ${snap ? fmtTime(snap.timestamp) : 'never'}`,
-    `Files     : ${snap?.tree.length ?? 0}`,
+    `Files     : ${snapFiles}`,
+    `Dirs      : ${snapDirs}`,
     `Modules   : ${snap?.deps.nodes.length ?? 0}`,
     `Edges     : ${snap?.deps.edges.length ?? 0}`,
     `Routes    : ${snap?.patterns.routes.length ?? 0}`,
