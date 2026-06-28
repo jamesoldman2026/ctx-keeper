@@ -56,13 +56,19 @@ export function scanTree(root: string, ignore?: string[]): FileEntry[] {
       const childRel = rel ? rel + '/' + child.name : child.name;
       if (isIgnored(childRel, matcher)) continue;
 
-      if (child.isDirectory()) {
+      const absChild = abs + '/' + child.name;
+      let isDir = child.isDirectory();
+      if (!isDir && child.isSymbolicLink()) {
+        try { isDir = fs.statSync(absChild).isDirectory(); } catch { /* ignore */ }
+      }
+      if (isDir) {
         queue.push(childRel);
       }
+      const isFile = child.isFile() || (child.isSymbolicLink() && !isDir);
       entries.push({
         path: childRel,
-        type: child.isDirectory() ? 'dir' : 'file',
-        size: child.isFile() ? (fs.statSync(abs + '/' + child.name).size) : 0,
+        type: isDir ? 'dir' : 'file',
+        size: isFile ? (fs.statSync(absChild).size) : 0,
       });
     }
   }
@@ -74,10 +80,11 @@ export function scanTree(root: string, ignore?: string[]): FileEntry[] {
 // ── Import scanner ──
 
 const TS_IMPORT_RE: RegExp[] = [
-  /import\s+(?:\{[^}]*\}\s*|\*\s*as\s+\w+\s*|\w+\s*,?\s*(?:\{[^}]*\})?\s*)from\s+['"]([^'"]+)['"]/g,
-  /import\s+['"]([^'"]+)['"]/g,
+  /(?:import|export)\s+(?:\{[^}]*\}\s*|\*\s*as\s+\w+\s*|\w+\s*,?\s*(?:\{[^}]*\})?\s*)from\s+['"]([^'"]+)['"]/g,
+  /(?:import|export)\s+['"]([^'"]+)['"]/g,
   /const\s+\w+\s*[=:]\s*require\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
   /import\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
+  /export\s+\*\s+from\s+['"]([^'"]+)['"]/g,
 ];
 
 const PY_IMPORT_RE: RegExp[] = [

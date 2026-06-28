@@ -16,8 +16,10 @@ export function doScan(root: string): string {
     saveConfig(root, cfg);
   }
 
+  const files = snapshot.tree.filter(e => e.type === 'file').length;
+  const dirs = snapshot.tree.filter(e => e.type === 'dir').length;
   return [
-    `✓ scanned ${snapshot.tree.length} entries, ${snapshot.deps.nodes.length} modules`,
+    `✓ scanned ${files} files, ${dirs} dirs, ${snapshot.deps.nodes.length} modules`,
     `  framework: ${snapshot.patterns.framework || 'unknown'}`,
     `  entry points: ${snapshot.patterns.entryPoints.join(', ') || 'none detected'}`,
     `  routes: ${snapshot.patterns.routes.length}`,
