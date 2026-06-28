@@ -147,20 +147,38 @@ function resolveImport(fromFile: string, target: string, root: string): string |
     return null;
   }
 
+  const fromDir = path.dirname(fromFile);
+
+  {
+    const c = path.resolve(root, fromDir, target);
+    if (fs.existsSync(c)) return path.relative(root, c);
+  }
+  {
+    const c = path.resolve(root, target);
+    if (fs.existsSync(c)) return target;
+  }
+
   if (target.includes('.') && !target.startsWith('.')) {
     const asPath = target.replace(/\./g, '/');
-    const fromDir = path.resolve(root, path.dirname(fromFile));
-    let dir = fromDir;
+    let dir = path.resolve(root, fromDir);
     while (dir.startsWith(root)) {
       for (const suffix of ['.py', '/__init__.py']) {
         const c = path.join(dir, asPath + suffix);
-        if (fs.existsSync(c)) {
-          return path.relative(root, c);
-        }
+        if (fs.existsSync(c)) return path.relative(root, c);
       }
       const parent = path.dirname(dir);
       if (parent === dir) break;
       dir = parent;
+    }
+  }
+
+  {
+    const cExt = path.extname(target);
+    if (!cExt) {
+      for (const ext of ['.h', '.hpp', '.hh', '.hxx']) {
+        const c = path.resolve(root, fromDir, target + ext);
+        if (fs.existsSync(c)) return path.relative(root, c);
+      }
     }
   }
 
